@@ -25,7 +25,7 @@ void game_init(GameContext *g) {
   rl_set_target_fps(g->target_fps);
   rl_init_audio_device();
 
-  // Center Window
+   // Center Window
 #ifdef PLATFORM_DESKTOP
   int monitor_id = rl_get_current_monitor();
   int monitor_width = rl_get_monitor_width(monitor_id);
@@ -49,12 +49,15 @@ void game_init(GameContext *g) {
   rl_set_texture_filter(g->screen.texture, TEXTURE_FILTER_POINT);
 
   // --- Test Image Draw ---
-  Image test_img = rl_load_image("assets/vaca1.png");
-  g->test_image = rl_load_texture_from_image(test_img);
-  rl_unload_image(test_img);
+  Image img = rl_load_image("assets/vaca1.png");
+  g->papagaio_image = rl_load_texture_from_image(img);
+  rl_unload_image(img);
 
   // --- Test Sound ---
-  g->test_sound = rl_load_sound("assets/bolha.wav");
+  g->papagaio_sound = rl_load_sound("assets/bolha.wav");
+
+  g->papagaio_pos.x = g->screen.texture.width * 0.5f;
+  g->papagaio_pos.y = g->screen.texture.height * 0.5f;
 }
 
 void game_update(GameContext *g) {
@@ -73,6 +76,9 @@ void game_update(GameContext *g) {
     } break;
 
     case SCREEN_GAMEPLAY: {
+      f32 time = rl_get_time();
+      g->papagaio_pos.y += 0.25f * sin(time);
+      
       // Toggle pause state
       if (rl_is_key_pressed(KEY_P)) {
         g->is_paused = !g->is_paused;
@@ -81,7 +87,7 @@ void game_update(GameContext *g) {
       // Only update gameplay logic if the game is not paused
       if (!g->is_paused) {
         if (rl_is_key_pressed(KEY_M)) {
-          rl_play_sound(g->test_sound);
+          rl_play_sound(g->papagaio_sound);
         }
       }
 
@@ -116,8 +122,11 @@ void game_draw(GameContext *g) {
   case SCREEN_GAMEPLAY: {
     rl_clear_background(BROWN);
     rl_draw_texture(
-        g->test_image, (g->screen.texture.width - g->test_image.width) / 2,
-        (g->screen.texture.height - g->test_image.height) / 2, WHITE);
+        g->papagaio_image,
+        g->papagaio_pos.x - (g->papagaio_image.width) / 2,
+        g->papagaio_pos.y - (g->papagaio_image.height) / 2,
+        WHITE
+      );
 
     // If the game is paused, draw an overlay
     if (g->is_paused) {

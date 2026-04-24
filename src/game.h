@@ -34,11 +34,12 @@ typedef struct GameContext {
   bool should_close;
 
   // Game Specifics
-  Sound test_sound;
-  Texture2D test_image;
-
   // Papagaio
-  Vec2 papagaio;
+  Vec2 papagaio_pos;
+  Sound papagaio_sound;
+  Texture2D papagaio_image;
+
+  // Gaviao
   Vec2 gaviao;
 
   // The state for our transition system
