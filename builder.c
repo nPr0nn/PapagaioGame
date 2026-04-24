@@ -55,7 +55,6 @@ bool build_vendors(ArenaAllocator *arena_ptr, bool is_web) {
     mak_builder_add_define(builder, "GRAPHICS_API_OPENGL_33");
     mak_builder_add_cflag(builder, "-Wall");
     mak_builder_add_cflag(builder, "-Wno-missing-braces");
-    mak_builder_add_cflag(builder, "-std=c99");
     mak_builder_add_cflag(builder, "-O2");
 #else
     mak_builder_add_include(builder, ".");
@@ -69,7 +68,6 @@ bool build_vendors(ArenaAllocator *arena_ptr, bool is_web) {
     mak_builder_add_cflag(builder, "-Werror=implicit-function-declaration");
     mak_builder_add_cflag(builder, "-Wno-missing-braces");
     mak_builder_add_cflag(builder, "-fno-strict-aliasing");
-    mak_builder_add_cflag(builder, "-std=c99");
     mak_builder_add_cflag(builder, "-fPIC");
     mak_builder_add_cflag(builder, "-O2");
 #endif
@@ -125,7 +123,6 @@ bool build_game(ArenaAllocator *arena_ptr, bool is_web) {
     mak_builder_set_compiler(builder, "g++");
     mak_builder_add_libdir(builder, "target/desktop");
     mak_builder_add_lib(builder, "raylib");
-    mak_builder_add_cflag(builder, "-std=c99");
 
 #ifdef _WIN32
     mak_builder_add_lib(builder, "opengl32");
