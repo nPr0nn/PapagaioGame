@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <style>
+    body, html {
+      margin: 0;
+      display: flex;
+      position: absolute;
+      top: 0px;
+      left: 0px;
+      overflow: hidden;            /* 🔑 remove scrollbars */
+      margin: 0px;
+      border: 0;
+      width: 100%;
+      height: 100%;
+      justify-content: center;
+      align-items: center;
+    }
+    #canvas {
+      border: 1px solid black; /* Optional: to visualize the canvas border */
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas" style="background-color: #F08;" oncontextmenu="event.preventDefault()"></canvas>
+  <script type='text/javascript'>
+    var Module = {
+      canvas: (function() { return document.getElementById('canvas'); })()
+    };
+  </script>
+  {{{ SCRIPT }}}
+</body>
+</html>
+
