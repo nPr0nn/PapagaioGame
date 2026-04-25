@@ -58,7 +58,40 @@ typedef struct GameContext
   AudioCapture microphone_capture;
 
   // Gaviao
-  Vec2 gaviao;
+  Vec2 gaviao_pos;
+  Vec2 gaviao_speed;
+  Vec2 gaviao_size;
+  Texture2D harpia_image;
+  
+  Vec2 Pedra_pos;
+  Vec2 Pedra_speed;
+  Vec2 Pedra_size;
+  Texture2D pedra_image;
+  
+  Vec2 Bala_pos;
+  Vec2 Bala_speed;
+  Vec2 Bala_size;
+  Texture2D bala_image;
+  
+  Vec2 Coco_pos;
+  Vec2 Coco_speed;
+  Vec2 Coco_size;
+  Texture2D coco_image;
+  
+  
+  Vec2 Coqueiro_pos;
+  Vec2 Coqueiro_speed;
+  Vec2 Coqueiro_size;
+  Texture2D coqueiro_image;
+  
+  Texture2D back_image;
+
+  i32 coco_cai_em;
+  i32 coco_na_arvore;
+  i32 timer1;
+  
+
+
 
   // The state for our transition system
   TransitionState transition_state;

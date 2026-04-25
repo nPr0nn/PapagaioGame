@@ -1,5 +1,51 @@
 #include "game.h"
 #include "systems/transition_system.h"
+#include <math.h>
+#include <stdio.h>
+
+void all_pos(GameContext *g) {
+  g->gaviao_pos.x = 20;
+  g->gaviao_pos.y = 50;
+  g->gaviao_speed.x = 0;
+  g->gaviao_speed.y = 0;
+
+  g->Pedra_pos.x = -100;
+  g->Pedra_pos.y = 100;
+  g->Pedra_speed.x = -1;
+  g->Pedra_speed.y = 0;
+
+  g->Bala_pos.x = -100;
+  g->Bala_pos.y = 100;
+  g->Bala_speed.x = -1;
+  g->Bala_speed.y = 0;
+
+  g->Coco_pos.x = -100;
+  g->Coco_pos.y = 100;
+  g->Coco_speed.x = -1;
+  g->Coco_speed.y = 2;
+
+  g->Coqueiro_pos.x = -100;
+  g->Coqueiro_pos.y = 100;
+  g->Coqueiro_speed.x = -1;
+  g->Coqueiro_speed.y = 0;
+}
+
+void all_size(GameContext *g) {
+  g->gaviao_size.x = 16;
+  g->gaviao_size.y = 16;
+
+  g->Pedra_size.x = 40;
+  g->Pedra_size.y = 40;
+
+  g->Bala_size.x = 4;
+  g->Bala_size.y = 4;
+
+  g->Coco_size.x = 16;
+  g->Coco_size.y = 16;
+
+  g->Coqueiro_size.x = 32;
+  g->Coqueiro_size.y = 144;
+}
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -57,16 +103,34 @@ void game_init(GameContext *g) {
   rl_set_texture_filter(g->screen.texture, TEXTURE_FILTER_POINT);
 
   // --- Test Image Draw ---
-  Image img = rl_load_image("assets/vaca1.png");
+  Image img = rl_load_image("assets/Imgs/papagaio.png");
   g->papagaio_image = rl_load_texture_from_image(img);
   rl_unload_image(img);
+  Image harpia_img = rl_load_image("assets/Imgs/harpia.png");
+  g->harpia_image = rl_load_texture_from_image(harpia_img);
+  rl_unload_image(harpia_img);
+  Image bala_img = rl_load_image("assets/Imgs/bala.png");
+  g->bala_image = rl_load_texture_from_image(bala_img);
+  rl_unload_image(bala_img);
+  Image coco_img = rl_load_image("assets/Imgs/Cocó.png");
+  g->coco_image = rl_load_texture_from_image(coco_img);
+  rl_unload_image(coco_img);
+  Image pedra_img = rl_load_image("assets/Imgs/Predra.png");
+  g->pedra_image = rl_load_texture_from_image(pedra_img);
+  rl_unload_image(pedra_img);
+  Image coqueiro_img = rl_load_image("assets/Imgs/palmeira_versão_merda.png");
+  g->coqueiro_image = rl_load_texture_from_image(coqueiro_img);
+  rl_unload_image(coqueiro_img);
+  Image back_img = rl_load_image("assets/Imgs/Background.png");
+  g->back_image = rl_load_texture_from_image(back_img);
+  rl_unload_image(back_img);
 
   // --- Test Sound ---
   g->scream_playback_samples =
       (short *)malloc(sizeof(short) * AUDIO_CAPTURE_MAX_SCREAM_FRAMES);
 
   g->papagaio_sound = rl_load_sound("assets/bolha.wav");
-
+  
   g->papagaio_pos.x = g->screen.texture.width * 0.5f;
   g->papagaio_pos.y = g->screen.texture.height * 0.5f;
 
@@ -76,6 +140,82 @@ void game_init(GameContext *g) {
   g->flap_force = 350.0f;
 
   g->rot = 0;
+  
+  all_pos(g);
+  all_size(g);
+
+  g->coco_cai_em = rl_get_random_value(100, 160);
+  g->coco_na_arvore = 1;
+
+  g->timer1 = 0;
+  
+}
+
+void spawn(GameContext *g) {
+  // Logic for spawning game objects would go here
+  if(g->Pedra_pos.x + g->Pedra_size.x < 0)
+  {
+    g->Pedra_pos.x = 160+rl_get_random_value(0, 500);
+    g->Pedra_pos.y = 144-g->Pedra_size.y;
+    g->Pedra_speed.x = -2;
+    g->Pedra_speed.y = 0;
+  }
+
+  if(g->Coqueiro_pos.x + g->Coqueiro_size.x< 0)
+  {
+    g->Coqueiro_pos.x = 200+rl_get_random_value(0, 700);
+    g->Coqueiro_pos.y = 144-g->Coqueiro_size.y;
+    g->Coqueiro_speed.x = -2;
+    g->Coqueiro_speed.y = 0;
+
+    g->coco_cai_em = rl_get_random_value(100, 160);
+    g->Coco_pos.x = -100;
+    g->coco_na_arvore = 1;
+  }
+
+  if(g->Coqueiro_pos.x <= g->coco_cai_em && g->coco_na_arvore == 1)
+  {
+    g->Coco_pos.x = g->Coqueiro_pos.x;
+    g->Coco_pos.y = 10;
+    g->Coco_speed.x = -2;
+    g->Coco_speed.y = 3;
+    g->coco_na_arvore = 0;
+  }
+
+  if(g->Bala_pos.x + g->Bala_size.x< 0)
+  {
+    g->Bala_pos.x = 230+rl_get_random_value(0, 1000);
+    g->Bala_pos.y = 72 + rl_get_random_value(-72, 72);
+    g->Bala_speed.x = -rl_get_random_value(2, 4);
+    g->Bala_speed.y = 0;
+  }
+
+  
+  if(rl_get_random_value(0, 100) < 5)
+  {
+  
+  }
+}
+
+void update_positions(GameContext *g) {
+  // Logic for updating positions of game objects would go here
+  // For example, you could add boundary checks or reset positions when they go off-screen
+  g->timer1++;
+  g->gaviao_pos.x += g->gaviao_speed.x;
+  g->gaviao_pos.y += g->gaviao_speed.y;
+  
+  g->Pedra_pos.x += g->Pedra_speed.x;
+  g->Pedra_pos.y += g->Pedra_speed.y;
+
+  g->Coco_pos.x += g->Coco_speed.x;
+  g->Coco_pos.y = fmin(g->Coco_speed.y + g->Coco_pos.y, 144 - g->Coco_size.y);
+  // printf("Coco_pos.x: %f Coco_pos.y: %f\n", g->Coco_pos.x, g->Coco_pos.y);
+
+  g->Coqueiro_pos.x += g->Coqueiro_speed.x;
+  g->Coqueiro_pos.y += g->Coqueiro_speed.y;
+
+  g->Bala_pos.x += g->Bala_speed.x;
+  g->Bala_pos.y += g->Bala_speed.y;
 }
 
 void game_update(GameContext *g) {
@@ -133,13 +273,20 @@ void game_update(GameContext *g) {
         transition_to_screen(&g->transition_state, SCREEN_TITLE,
                              TRANSITION_WIPE_RIGHT, BLACK);
       }
+
+      spawn(g);
+      update_positions(g);
+
     } break;
 
     case SCREEN_OPTIONS: {
     } break;
     }
   }
+  
 }
+
+
 
 void game_draw(GameContext *g) {
   // 1. Draw game to screen texture
@@ -169,12 +316,25 @@ void game_draw(GameContext *g) {
   } break;
   case SCREEN_GAMEPLAY: {
     rl_clear_background(BROWN);
+    rl_draw_texture(g->back_image,
+                    g->screen.texture.width / 2 - g->back_image.width / 2,
+                    g->screen.texture.height - g->back_image.height, WHITE);
 
+    
     rl_draw_texture_ex(
-        g->papagaio_image,
-        (Vec2){g->papagaio_pos.x - (g->papagaio_image.width) / 2,
-               g->papagaio_pos.y - (g->papagaio_image.height) / 2},
-        0.0, g->obj_scale, WHITE);
+      g->papagaio_image,
+      (Vec2){g->papagaio_pos.x - (g->papagaio_image.width) / 2,
+      g->papagaio_pos.y - (g->papagaio_image.height) / 2},
+      0.0f,
+      1.0f,
+      WHITE
+    );
+    
+    rl_draw_rectangle(g->Bala_pos.x, g->Bala_pos.y, g->Bala_size.x, g->Bala_size.y, RED);
+    rl_draw_rectangle(g->Coco_pos.x, g->Coco_pos.y, g->Coco_size.x, g->Coco_size.y, PINK);
+    rl_draw_rectangle(g->Coqueiro_pos.x, g->Coqueiro_pos.y, g->Coqueiro_size.x, 20, GREEN);
+    rl_draw_rectangle(g->Pedra_pos.x, g->Pedra_pos.y, g->Pedra_size.x, g->Pedra_size.y, LIGHTGRAY);
+    rl_draw_rectangle(g->gaviao_pos.x, g->gaviao_pos.y, g->gaviao_size.x, g->gaviao_size.y, BLUE);
 
     // If the game is paused, draw an overlay
     if (g->is_paused) {
