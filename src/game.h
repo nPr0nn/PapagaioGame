@@ -40,7 +40,34 @@ typedef struct GameContext {
   Texture2D papagaio_image;
 
   // Gaviao
-  Vec2 gaviao;
+  Vec2 gaviao_pos;
+  Vec2 gaviao_speed;
+  Vec2 gaviao_size;
+
+  Vec2 Pedra_pos;
+  Vec2 Pedra_speed;
+  Vec2 Pedra_size;
+
+  Vec2 Bala_pos;
+  Vec2 Bala_speed;
+  Vec2 Bala_size;
+
+  Vec2 Coco_pos;
+  Vec2 Coco_speed;
+  Vec2 Coco_size;
+
+
+  Vec2 Coqueiro_pos;
+  Vec2 Coqueiro_speed;
+  Vec2 Coqueiro_size;
+
+
+  i32 coco_cai_em;
+  i32 coco_na_arvore;
+  i32 timer1;
+  
+
+
 
   // The state for our transition system
   TransitionState transition_state;
