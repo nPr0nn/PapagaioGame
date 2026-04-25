@@ -39,6 +39,9 @@ typedef struct GameContext
   // Papagaio
   Vec2 papagaio_pos;
   Sound papagaio_sound;
+  Sound scream_playback_sound;
+  bool scream_playback_sound_ready;
+  short scream_playback_samples[AUDIO_CAPTURE_MAX_SCREAM_FRAMES];
   Texture2D papagaio_image;
   AudioCapture microphone_capture;
 

@@ -28,6 +28,7 @@ void game_init(GameContext *g)
   rl_init_audio_device();
 
   audio_capture_init(&g->microphone_capture);
+  g->scream_playback_sound_ready = false;
 
   // --- Render Screen Texture ---
   int screen_texture_width = 160;
@@ -50,7 +51,34 @@ void game_init(GameContext *g)
 
 void game_update(GameContext *g)
 {
+  unsigned int processed_scream_frames = 0;
   audio_capture_update(&g->microphone_capture);
+
+  if (audio_capture_consume_modified_scream(&g->microphone_capture,
+                                            g->scream_playback_samples,
+                                            AUDIO_CAPTURE_MAX_SCREAM_FRAMES,
+                                            &processed_scream_frames))
+  {
+    if (g->scream_playback_sound_ready)
+    {
+      rl_unload_sound(g->scream_playback_sound);
+      g->scream_playback_sound_ready = false;
+    }
+
+    Wave scream_wave = {0};
+    scream_wave.frameCount = processed_scream_frames;
+    scream_wave.sampleRate = AUDIO_CAPTURE_SAMPLE_RATE;
+    scream_wave.sampleSize = 16;
+    scream_wave.channels = 1;
+    scream_wave.data = g->scream_playback_samples;
+
+    g->scream_playback_sound = rl_load_sound_from_wave(scream_wave);
+    if (rl_is_sound_valid(g->scream_playback_sound))
+    {
+      g->scream_playback_sound_ready = true;
+      rl_play_sound(g->scream_playback_sound);
+    }
+  }
 
   // Always update the transition state first
   update_transition(&g->transition_state, &g->current_screen);
@@ -201,6 +229,12 @@ void game_loop_step(void *ctx)
 
 void game_exit(GameContext *g)
 {
+  if (g->scream_playback_sound_ready)
+  {
+    rl_unload_sound(g->scream_playback_sound);
+    g->scream_playback_sound_ready = false;
+  }
+
   audio_capture_uninit(&g->microphone_capture);
   rl_close_window();
   rl_close_audio_device();
