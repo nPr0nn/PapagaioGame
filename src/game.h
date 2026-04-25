@@ -35,15 +35,27 @@ typedef struct GameContext
   // Close Events
   bool should_close;
 
+  // scale
+  f32 obj_scale;
+
+  // Physics f
+  f32 gravity;
+
+  f32 rot;   
+  
   // Game Specifics
   // Papagaio
   Vec2 papagaio_pos;
+  f32 papagaio_vel;
+  f32 papagaio_acc;
+  f32 flap_force;
   Sound papagaio_sound;
   Sound scream_playback_sound;
   bool scream_playback_sound_ready;
   short scream_playback_samples[AUDIO_CAPTURE_MAX_SCREAM_FRAMES];
   Texture2D papagaio_image;
   AudioCapture microphone_capture;
+
 
   // Gaviao
   Vec2 gaviao;
