@@ -9,12 +9,14 @@
 #include "web_utils.h"
 
 #include "systems/transition_system.h"
+#include "audio_capture.h"
 
 #include <math.h>
 
 #define DEBUG 1
 
-typedef struct GameContext {
+typedef struct GameContext
+{
   // Game Defining
   const char *title;
   // We replace the old 'GameState' with 'GameScreen' and a pause flag
@@ -48,7 +50,11 @@ typedef struct GameContext {
   f32 papagaio_acc;
   f32 flap_force;
   Sound papagaio_sound;
+  Sound scream_playback_sound;
+  bool scream_playback_sound_ready;
+  short scream_playback_samples[AUDIO_CAPTURE_MAX_SCREAM_FRAMES];
   Texture2D papagaio_image;
+  AudioCapture microphone_capture;
 
 
   // Gaviao

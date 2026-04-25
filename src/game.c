@@ -1,10 +1,12 @@
 #include "game.h"
 #include "systems/transition_system.h"
 
-void game_init(GameContext *g) {
+void game_init(GameContext *g)
+{
 #ifndef DEBUG
   rl_set_trace_log_level(LOG_NONE);
 #endif
+  g->should_close = false;
   // Game Title
   g->title = "Raylib Game Template";
 
@@ -25,6 +27,8 @@ void game_init(GameContext *g) {
   rl_set_target_fps(g->target_fps);
   rl_init_audio_device();
 
+  audio_capture_init(&g->microphone_capture);
+  g->scream_playback_sound_ready = false;
    // Center Window
 #ifdef PLATFORM_DESKTOP
   i32 monitor_id = rl_get_current_monitor();
@@ -69,14 +73,50 @@ void game_init(GameContext *g) {
   g->rot = 0;
 }
 
-void game_update(GameContext *g) {
+void game_update(GameContext *g)
+{
+  unsigned int processed_scream_frames = 0;
+  audio_capture_update(&g->microphone_capture);
+
+  if (audio_capture_consume_modified_scream(&g->microphone_capture,
+                                            g->scream_playback_samples,
+                                            AUDIO_CAPTURE_MAX_SCREAM_FRAMES,
+                                            &processed_scream_frames))
+  {
+    if (g->scream_playback_sound_ready)
+    {
+      rl_unload_sound(g->scream_playback_sound);
+      g->scream_playback_sound_ready = false;
+    }
+
+    Wave scream_wave = {0};
+    scream_wave.frameCount = processed_scream_frames;
+    scream_wave.sampleRate = AUDIO_CAPTURE_SAMPLE_RATE;
+    scream_wave.sampleSize = 16;
+    scream_wave.channels = 1;
+    scream_wave.data = g->scream_playback_samples;
+
+    g->scream_playback_sound = rl_load_sound_from_wave(scream_wave);
+    if (rl_is_sound_valid(g->scream_playback_sound))
+    {
+      g->scream_playback_sound_ready = true;
+      rl_play_sound(g->scream_playback_sound);
+    }
+  }
+
+  // Always update the transition state first
   update_transition(&g->transition_state, &g->current_screen);
 
-  if (!is_transitioning(&g->transition_state)) {
-    switch (g->current_screen) {
-    case SCREEN_TITLE: {
-      if (rl_is_key_pressed(KEY_ENTER)) {
-        // Reset bird state when entering gameplay
+  // Only process game logic if we are not in the middle of a transition
+  if (!is_transitioning(&g->transition_state))
+  {
+    switch (g->current_screen)
+    {
+    case SCREEN_TITLE:
+    {
+      // When ENTER is pressed, start a transition to the gameplay screen
+      if (rl_is_key_pressed(KEY_ENTER))
+      {
         g->papagaio_pos.x = g->screen.texture.width  * 0.33f;
         g->papagaio_pos.y = g->screen.texture.height * 0.5f;
         g->papagaio_vel   = 0;
@@ -84,7 +124,8 @@ void game_update(GameContext *g) {
         transition_to_screen(&g->transition_state, SCREEN_GAMEPLAY,
                              TRANSITION_CIRCLE_EXPAND, BLACK);
       }
-    } break;
+    }
+    break;
 
     case SCREEN_GAMEPLAY: {
       f32 dt = rl_get_frame_time();
@@ -112,20 +153,26 @@ void game_update(GameContext *g) {
         }
       }
 
-      if (rl_is_key_pressed(KEY_T)) {
+      // Allow transitioning back to title screen
+      if (rl_is_key_pressed(KEY_T))
+      {
         transition_to_screen(&g->transition_state, SCREEN_TITLE,
                              TRANSITION_WIPE_RIGHT, BLACK);
       }
-    } break;
+    }
+    break;
 
-    case SCREEN_OPTIONS: {
-    } break;
+    case SCREEN_OPTIONS:
+    {
+      // Logic for options screen would go here
+    }
+    break;
     }
   }
 }
 
-
-void game_draw(GameContext *g) {
+void game_draw(GameContext *g)
+{
   // 1. Draw game to screen texture
   rl_begin_texture_mode(g->screen);
   rl_clear_background(RAYWHITE);
@@ -163,18 +210,21 @@ void game_draw(GameContext *g) {
       );
 
     // If the game is paused, draw an overlay
-    if (g->is_paused) {
+    if (g->is_paused)
+    {
       rl_draw_rectangle(0, 0, g->screen.texture.width, g->screen.texture.height,
                         rl_fade(BLACK, 0.6f));
 
       rl_draw_text("PAUSED", g->screen.texture.width / 2 - 20,
                    g->screen.texture.height / 2 - 5, 10, WHITE);
     }
-
-  } break;
-  case SCREEN_OPTIONS: {
+  }
+  break;
+  case SCREEN_OPTIONS:
+  {
     // Drawing for options screen
-  } break;
+  }
+  break;
   }
 
   // 3. Draw the transition effect on top of everything else
@@ -206,7 +256,8 @@ void game_draw(GameContext *g) {
   rl_end_drawing();
 }
 
-void game_loop_step(void *ctx) {
+void game_loop_step(void *ctx)
+{
   GameContext *g = (GameContext *)ctx;
 
   if (rl_is_key_pressed(KEY_F))
@@ -218,7 +269,15 @@ void game_loop_step(void *ctx) {
   game_draw(g);
 }
 
-void game_exit(GameContext *g) {
+void game_exit(GameContext *g)
+{
+  if (g->scream_playback_sound_ready)
+  {
+    rl_unload_sound(g->scream_playback_sound);
+    g->scream_playback_sound_ready = false;
+  }
+
+  audio_capture_uninit(&g->microphone_capture);
   rl_close_window();
   rl_close_audio_device();
 }

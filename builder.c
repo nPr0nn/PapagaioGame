@@ -14,14 +14,18 @@
 #define MAX_PATH_SIZE 256
 #define TARGET_FOLDER "target/"
 
-bool build_vendors(ArenaAllocator *arena_ptr, bool is_web) {
+bool build_vendors(ArenaAllocator *arena_ptr, bool is_web)
+{
   // Create output folder
   char output_folder_path[MAX_PATH_SIZE];
   mak_makedir(TARGET_FOLDER, TRUE);
 
-  if (is_web) {
+  if (is_web)
+  {
     mak_path_join(output_folder_path, TARGET_FOLDER, "web");
-  } else {
+  }
+  else
+  {
     mak_path_join(output_folder_path, TARGET_FOLDER, "desktop");
   }
   mak_makedir(output_folder_path, TRUE);
@@ -38,24 +42,27 @@ bool build_vendors(ArenaAllocator *arena_ptr, bool is_web) {
       "vendors/raylib/rshapes.c", "vendors/raylib/rtext.c",
       "vendors/raylib/rtextures.c", "vendors/raylib/utils.c", NULL);
 
-  if (is_web) {
+  if (is_web)
+  {
     mak_builder_set_compiler(builder, "emcc");
     mak_builder_add_define(builder, "PLATFORM_WEB");
     mak_builder_add_define(builder, "GRAPHICS_API_OPENGL_ES2");
     mak_builder_add_cflag(builder, "-Wall");
-  } else {
+  }
+  else
+  {
     mak_builder_set_compiler(builder, "gcc");
 
     // Add rglfw.c for desktop
     mak_builder_add_sources(builder, "vendors/raylib/rglfw.c", NULL);
 
 #ifdef _WIN32
-    mak_builder_add_include(builder, "vendors/raylib/src");
+    mak_builder_add_include(builder, "vendors/raylib");
+    mak_builder_add_include(builder, "vendors/raylib/external/glfw/include");
     mak_builder_add_define(builder, "PLATFORM_DESKTOP");
     mak_builder_add_define(builder, "GRAPHICS_API_OPENGL_33");
     mak_builder_add_cflag(builder, "-Wall");
     mak_builder_add_cflag(builder, "-Wno-missing-braces");
-    mak_builder_add_cflag(builder, "-std=c99");
     mak_builder_add_cflag(builder, "-O2");
 #else
     mak_builder_add_include(builder, ".");
@@ -69,7 +76,6 @@ bool build_vendors(ArenaAllocator *arena_ptr, bool is_web) {
     mak_builder_add_cflag(builder, "-Werror=implicit-function-declaration");
     mak_builder_add_cflag(builder, "-Wno-missing-braces");
     mak_builder_add_cflag(builder, "-fno-strict-aliasing");
-    mak_builder_add_cflag(builder, "-std=c99");
     mak_builder_add_cflag(builder, "-fPIC");
     mak_builder_add_cflag(builder, "-O2");
 #endif
@@ -80,14 +86,18 @@ bool build_vendors(ArenaAllocator *arena_ptr, bool is_web) {
   return result.success;
 }
 
-bool build_game(ArenaAllocator *arena_ptr, bool is_web) {
+bool build_game(ArenaAllocator *arena_ptr, bool is_web)
+{
   // Create output folder
   char output_folder_path[MAX_PATH_SIZE];
   mak_makedir(TARGET_FOLDER, TRUE);
 
-  if (is_web) {
+  if (is_web)
+  {
     mak_path_join(output_folder_path, TARGET_FOLDER, "web");
-  } else {
+  }
+  else
+  {
     mak_path_join(output_folder_path, TARGET_FOLDER, "desktop");
   }
   mak_makedir(output_folder_path, TRUE);
@@ -98,14 +108,17 @@ bool build_game(ArenaAllocator *arena_ptr, bool is_web) {
   mak_builder_set_output_dir(builder, output_folder_path);
 
   // Add game sources
-  mak_builder_add_sources(builder, "src/main.c", "src/game.c", NULL);
+  mak_builder_add_sources(builder, "src/main.c", "src/game.c",
+                          "src/audio_capture.c", NULL);
 
   // Add raylib include directory
-  mak_builder_add_include(builder, "vendors/libraylib");
+  mak_builder_add_include(builder, "vendors/raylib");
+  mak_builder_add_include(builder, "vendors/raylib/external/glfw/include");
 
   MakResult result;
 
-  if (is_web) {
+  if (is_web)
+  {
     mak_builder_set_compiler(builder, "em++");
     mak_builder_add_define(builder, "PLATFORM_WEB");
     mak_builder_add_libdir(builder, "target/web");
@@ -121,11 +134,28 @@ bool build_game(ArenaAllocator *arena_ptr, bool is_web) {
     mak_builder_add_cflag(builder, "--preload-file");
     mak_builder_add_cflag(builder, "assets");
     result = mak_builder_compile_executable(builder, "index.html");
-  } else {
-    mak_builder_set_compiler(builder, "g++");
+  }
+  else
+  {
+    mak_builder_set_compiler(builder, "gcc");
+
+#ifdef _WIN32
+    // Build raylib directly into the game executable on Windows so we do not
+    // depend on a separate static archive during linking.
+    mak_builder_add_sources(
+        builder, "vendors/raylib/rcore.c", "vendors/raylib/raudio.c",
+        "vendors/raylib/rshapes.c", "vendors/raylib/rtext.c",
+        "vendors/raylib/rtextures.c", "vendors/raylib/utils.c",
+        "vendors/raylib/rglfw.c", NULL);
+    mak_builder_add_define(builder, "PLATFORM_DESKTOP");
+    mak_builder_add_define(builder, "GRAPHICS_API_OPENGL_33");
+    mak_builder_add_cflag(builder, "-Wall");
+    mak_builder_add_cflag(builder, "-Wno-missing-braces");
+    mak_builder_add_cflag(builder, "-O2");
+#else
     mak_builder_add_libdir(builder, "target/desktop");
     mak_builder_add_lib(builder, "raylib");
-    mak_builder_add_cflag(builder, "-std=c99");
+#endif
 
 #ifdef _WIN32
     mak_builder_add_lib(builder, "opengl32");
@@ -143,18 +173,23 @@ bool build_game(ArenaAllocator *arena_ptr, bool is_web) {
     result = mak_builder_compile_executable(builder, "game");
   }
 
-  if (!result.success) {
+  if (!result.success)
+  {
     printf("error: failed to build game: %s\n", result.message);
   }
 
   return result.success;
 }
 
-void run_game(ArenaAllocator *arena_ptr, bool is_web) {
-  if (is_web) {
+void run_game(ArenaAllocator *arena_ptr, bool is_web)
+{
+  if (is_web)
+  {
     printf("[run] game - web version\n");
     mak_cmd_exec("emrun target/web/index.html");
-  } else {
+  }
+  else
+  {
     printf("[run] game - desktop version\n");
 #ifdef _WIN32
     mak_cmd_exec("target\\desktop\\game.exe");
@@ -165,7 +200,8 @@ void run_game(ArenaAllocator *arena_ptr, bool is_web) {
 }
 
 // --- Main Entry Point ---
-i32 main(i32 argc, char **argv) {
+i32 main(i32 argc, char **argv)
+{
   ArenaAllocator arena = {0};
   arena_alloc(&arena, ARENA_KB(4));
 
@@ -178,7 +214,8 @@ i32 main(i32 argc, char **argv) {
                               .type = MAK_ARG_BOOL,
                               .description = "Build or run the web version"});
 
-  if (!mak_argparser_parse(argparser, argc, argv)) {
+  if (!mak_argparser_parse(argparser, argc, argv))
+  {
     mak_argparser_print_error(argparser);
     arena_free(&arena);
     return 1;
@@ -192,39 +229,48 @@ i32 main(i32 argc, char **argv) {
   bool is_game = mak_argparser_has_command(argparser, "game");
 
   // Validate top-level commands
-  if (!should_build && !should_run) {
+  if (!should_build && !should_run)
+  {
     printf("error: missing command (expected 'build' or 'run')\n");
     arena_free(&arena);
     return 1;
   }
 
   // Handle invalid combinations early
-  if (should_run && is_vendors) {
+  if (should_run && is_vendors)
+  {
     printf("error: 'vendors' is a library and cannot be run\n");
     arena_free(&arena);
     return 1;
   }
 
-  if (should_run && !is_game) {
+  if (should_run && !is_game)
+  {
     printf("error: only 'game' can be run\n");
     arena_free(&arena);
     return 1;
   }
 
-  if (should_build && !is_vendors && !is_game) {
+  if (should_build && !is_vendors && !is_game)
+  {
     printf("error: unknown build target (expected 'vendors' or 'game')\n");
     arena_free(&arena);
     return 1;
   }
 
   // Execute actions
-  if (should_build && is_vendors) {
+  if (should_build && is_vendors)
+  {
     build_vendors(&arena, is_web);
-  } else {
-    if (should_build && is_game) {
+  }
+  else
+  {
+    if (should_build && is_game)
+    {
       should_run = build_game(&arena, is_web);
     }
-    if (should_run && is_game) {
+    if (should_run && is_game)
+    {
       run_game(&arena, is_web);
     }
   }
