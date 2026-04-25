@@ -95,9 +95,27 @@ void game_init(GameContext *g) {
   rl_set_texture_filter(g->screen.texture, TEXTURE_FILTER_POINT);
 
   // --- Test Image Draw ---
-  Image img = rl_load_image("assets/vaca1.png");
+  Image img = rl_load_image("assets/Imgs/papagaio.png");
   g->papagaio_image = rl_load_texture_from_image(img);
   rl_unload_image(img);
+  Image harpia_img = rl_load_image("assets/Imgs/harpia.png");
+  g->harpia_image = rl_load_texture_from_image(harpia_img);
+  rl_unload_image(harpia_img);
+  Image bala_img = rl_load_image("assets/Imgs/bala.png");
+  g->bala_image = rl_load_texture_from_image(bala_img);
+  rl_unload_image(bala_img);
+  Image coco_img = rl_load_image("assets/Imgs/Cocó.png");
+  g->coco_image = rl_load_texture_from_image(coco_img);
+  rl_unload_image(coco_img);
+  Image pedra_img = rl_load_image("assets/Imgs/Predra.png");
+  g->pedra_image = rl_load_texture_from_image(pedra_img);
+  rl_unload_image(pedra_img);
+  Image coqueiro_img = rl_load_image("assets/Imgs/palmeira_versão_merda.png");
+  g->coqueiro_image = rl_load_texture_from_image(coqueiro_img);
+  rl_unload_image(coqueiro_img);
+  Image back_img = rl_load_image("assets/Imgs/Background.png");
+  g->back_image = rl_load_texture_from_image(back_img);
+  rl_unload_image(back_img);
 
   // --- Test Sound ---
   g->papagaio_sound = rl_load_sound("assets/bolha.wav");
@@ -249,12 +267,20 @@ void game_draw(GameContext *g) {
   } break;
   case SCREEN_GAMEPLAY: {
     rl_clear_background(BROWN);
-    rl_draw_texture(
+    rl_draw_texture(g->back_image,
+                    g->screen.texture.width / 2 - g->back_image.width / 2,
+                    g->screen.texture.height - g->back_image.height, WHITE);
+
+    
+    rl_draw_texture_ex(
       g->papagaio_image,
-      g->papagaio_pos.x - (g->papagaio_image.width) / 2,
-      g->papagaio_pos.y - (g->papagaio_image.height) / 2,
+      (Vec2){g->papagaio_pos.x - (g->papagaio_image.width) / 2,
+      g->papagaio_pos.y - (g->papagaio_image.height) / 2},
+      0.0f,
+      1.0f,
       WHITE
     );
+    
     rl_draw_rectangle(g->Bala_pos.x, g->Bala_pos.y, g->Bala_size.x, g->Bala_size.y, RED);
     rl_draw_rectangle(g->Coco_pos.x, g->Coco_pos.y, g->Coco_size.x, g->Coco_size.y, PINK);
     rl_draw_rectangle(g->Coqueiro_pos.x, g->Coqueiro_pos.y, g->Coqueiro_size.x, 20, GREEN);
