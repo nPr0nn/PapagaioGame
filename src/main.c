@@ -1,8 +1,9 @@
 
 #include "game.h"
 
-int main(void) {
-  GameContext game_context;
+int main(void)
+{
+  GameContext game_context = {0};
 
   game_init(&game_context);
 
@@ -12,7 +13,8 @@ int main(void) {
 #else
   // For desktop, we have a standard while loop with full control
   // The loop condition is now fully visible and not hidden in a macro
-  while (!rl_window_should_close() && !game_context.should_close) {
+  while (!rl_window_should_close() && !game_context.should_close)
+  {
     game_loop_step(&game_context);
   }
 #endif
