@@ -2,6 +2,7 @@
 
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 static float clampf(float value, float min_value, float max_value)
 {
@@ -75,8 +76,8 @@ bool audio_capture_init(AudioCapture *capture)
     }
 
     capture->amplitude = 0.0f;
-    capture->trigger_threshold = 0.18f;
-    capture->release_threshold = 0.12f;
+    capture->trigger_threshold = 0.01f;
+    capture->release_threshold = 0.02f;
     capture->above_threshold = false;
     capture->scream_triggered = false;
     capture->print_counter = 0;
@@ -84,6 +85,8 @@ bool audio_capture_init(AudioCapture *capture)
     capture->recording_scream = false;
     capture->scream_clip_ready = false;
     capture->ready = false;
+
+    capture->scream_samples = (float*)malloc(sizeof(float) * AUDIO_CAPTURE_MAX_SCREAM_FRAMES);
 
     ma_device_config config = ma_device_config_init(ma_device_type_capture);
     config.capture.format = ma_format_f32;

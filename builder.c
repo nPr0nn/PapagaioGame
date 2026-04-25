@@ -108,8 +108,7 @@ bool build_game(ArenaAllocator *arena_ptr, bool is_web)
   mak_builder_set_output_dir(builder, output_folder_path);
 
   // Add game sources
-  mak_builder_add_sources(builder, "src/main.c", "src/game.c",
-                          "src/audio_capture.c", NULL);
+  mak_builder_add_sources(builder, "src/main.c", "src/game.c", "src/audio_capture.c", NULL);
 
   // Add raylib include directory
   mak_builder_add_include(builder, "vendors/raylib");

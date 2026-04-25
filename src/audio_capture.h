@@ -17,7 +17,7 @@ typedef struct AudioCapture
     bool above_threshold;
     bool scream_triggered;
     int print_counter;
-    float scream_samples[AUDIO_CAPTURE_MAX_SCREAM_FRAMES];
+    float* scream_samples;
     unsigned int scream_frame_count;
     bool recording_scream;
     bool scream_clip_ready;

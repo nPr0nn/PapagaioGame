@@ -1,12 +1,13 @@
 #include "game.h"
 #include "systems/transition_system.h"
 
-void game_init(GameContext *g)
-{
+#include <stdlib.h>
+#include <stdio.h>
+
+void game_init(GameContext *g) {
 #ifndef DEBUG
   rl_set_trace_log_level(LOG_NONE);
 #endif
-  g->should_close = false;
   // Game Title
   g->title = "Raylib Game Template";
 
@@ -29,7 +30,8 @@ void game_init(GameContext *g)
 
   audio_capture_init(&g->microphone_capture);
   g->scream_playback_sound_ready = false;
-   // Center Window
+
+  // Center Window
 #ifdef PLATFORM_DESKTOP
   i32 monitor_id = rl_get_current_monitor();
   i32 monitor_width = rl_get_monitor_width(monitor_id);
@@ -46,8 +48,10 @@ void game_init(GameContext *g)
 #endif
 
   // --- Render Screen Texture ---
-  i32 screen_texture_width = 1080;
-  i32 screen_texture_height = 720;
+  g->obj_scale = 5.0;
+
+  i32 screen_texture_width = 160 * g->obj_scale;
+  i32 screen_texture_height = 144 * g->obj_scale;
   g->screen =
       rl_load_render_texture(screen_texture_width, screen_texture_height);
   rl_set_texture_filter(g->screen.texture, TEXTURE_FILTER_POINT);
@@ -58,76 +62,42 @@ void game_init(GameContext *g)
   rl_unload_image(img);
 
   // --- Test Sound ---
+  g->scream_playback_samples =
+      (short *)malloc(sizeof(short) * AUDIO_CAPTURE_MAX_SCREAM_FRAMES);
+
   g->papagaio_sound = rl_load_sound("assets/bolha.wav");
 
   g->papagaio_pos.x = g->screen.texture.width * 0.5f;
   g->papagaio_pos.y = g->screen.texture.height * 0.5f;
 
-  g->papagaio_vel   = 0;
-  g->papagaio_acc   = 0;
-  g->gravity        = 800;
-  g->flap_force    = 350.0f;
+  g->papagaio_vel = 0;
+  g->papagaio_acc = 0;
+  g->gravity = 800;
+  g->flap_force = 350.0f;
 
-
-  g->obj_scale = 5.0;
   g->rot = 0;
 }
 
-void game_update(GameContext *g)
-{
-  unsigned int processed_scream_frames = 0;
-  audio_capture_update(&g->microphone_capture);
-
-  if (audio_capture_consume_modified_scream(&g->microphone_capture,
-                                            g->scream_playback_samples,
-                                            AUDIO_CAPTURE_MAX_SCREAM_FRAMES,
-                                            &processed_scream_frames))
-  {
-    if (g->scream_playback_sound_ready)
-    {
-      rl_unload_sound(g->scream_playback_sound);
-      g->scream_playback_sound_ready = false;
-    }
-
-    Wave scream_wave = {0};
-    scream_wave.frameCount = processed_scream_frames;
-    scream_wave.sampleRate = AUDIO_CAPTURE_SAMPLE_RATE;
-    scream_wave.sampleSize = 16;
-    scream_wave.channels = 1;
-    scream_wave.data = g->scream_playback_samples;
-
-    g->scream_playback_sound = rl_load_sound_from_wave(scream_wave);
-    if (rl_is_sound_valid(g->scream_playback_sound))
-    {
-      g->scream_playback_sound_ready = true;
-      rl_play_sound(g->scream_playback_sound);
-    }
-  }
-
-  // Always update the transition state first
+void game_update(GameContext *g) {
   update_transition(&g->transition_state, &g->current_screen);
 
-  // Only process game logic if we are not in the middle of a transition
-  if (!is_transitioning(&g->transition_state))
-  {
-    switch (g->current_screen)
-    {
-    case SCREEN_TITLE:
-    {
-      // When ENTER is pressed, start a transition to the gameplay screen
-      if (rl_is_key_pressed(KEY_ENTER))
-      {
-        g->papagaio_pos.x = g->screen.texture.width  * 0.33f;
+  if (!is_transitioning(&g->transition_state)) {
+    switch (g->current_screen) {
+    case SCREEN_TITLE: {
+      if (rl_is_mouse_button_pressed(0)) {
+        // Reset bird state when entering gameplay
+        g->papagaio_pos.x = g->screen.texture.width * 0.33f;
         g->papagaio_pos.y = g->screen.texture.height * 0.5f;
-        g->papagaio_vel   = 0;
+        g->papagaio_vel = 0;
 
         transition_to_screen(&g->transition_state, SCREEN_GAMEPLAY,
                              TRANSITION_CIRCLE_EXPAND, BLACK);
       }
-    }
-    break;
+    } break;
 
     case SCREEN_GAMEPLAY: {
+      audio_capture_update(&g->microphone_capture);
+      
       f32 dt = rl_get_frame_time();
 
       if (rl_is_key_pressed(KEY_P)) {
@@ -139,40 +109,39 @@ void game_update(GameContext *g)
         g->papagaio_vel += g->gravity * dt;
         g->papagaio_pos.y += g->papagaio_vel * dt;
 
+
+        if (audio_capture_consume_scream(&g->microphone_capture))
+        {
+          g->papagaio_vel = -g->flap_force; 
+        }
+
         if (rl_is_key_pressed(KEY_SPACE)) {
-          g->papagaio_vel = -g->flap_force;   // flap_force e.g. 300.0f
+          g->papagaio_vel = -g->flap_force;
         }
 
         // Clamp to screen bounds
-        f32 h = g->screen.texture.height;
-        if (g->papagaio_pos.y < 0)  g->papagaio_pos.y = 0;
-        if (g->papagaio_pos.y > h)  g->papagaio_pos.y = h;
+        f32 h = g->screen.texture.height - g->papagaio_image.height * g->obj_scale;
+        if(g->papagaio_pos.y < 0) g->papagaio_pos.y = 0;
+        if(g->papagaio_pos.y > h) g->papagaio_pos.y = h;
 
         if (rl_is_key_pressed(KEY_M)) {
           rl_play_sound(g->papagaio_sound);
         }
       }
 
-      // Allow transitioning back to title screen
-      if (rl_is_key_pressed(KEY_T))
-      {
+      if (rl_is_key_pressed(KEY_T)) {
         transition_to_screen(&g->transition_state, SCREEN_TITLE,
                              TRANSITION_WIPE_RIGHT, BLACK);
       }
-    }
-    break;
+    } break;
 
-    case SCREEN_OPTIONS:
-    {
-      // Logic for options screen would go here
-    }
-    break;
+    case SCREEN_OPTIONS: {
+    } break;
     }
   }
 }
 
-void game_draw(GameContext *g)
-{
+void game_draw(GameContext *g) {
   // 1. Draw game to screen texture
   rl_begin_texture_mode(g->screen);
   rl_clear_background(RAYWHITE);
@@ -181,9 +150,9 @@ void game_draw(GameContext *g)
   switch (g->current_screen) {
   case SCREEN_TITLE: {
 
-    rl_clear_background(GREEN);
-    const char* title = "PAPA PAPAGAIO";
-    const char* instruction = "Clique ENTER para começar";
+    rl_clear_background(DARKGREEN);
+    const char *title = "PAPA PAPAGAIO";
+    const char *instruction = "Clique para começar";
     f32 w = g->screen.texture.width;
     f32 h = g->screen.texture.height;
 
@@ -192,10 +161,11 @@ void game_draw(GameContext *g)
 
     // cabeca ombro joelho e pe
     // by lozano
-    rl_draw_text(title,       w/2 - title_measure_w/2,       h/2 - 20, 10 * g->obj_scale, WHITE);
-    rl_draw_text(instruction, w/2 - instruction_measure_w/2, h/2 + 20,  8 * g->obj_scale, LIGHTGRAY);
-   
-    
+    rl_draw_text(title, w / 2 - title_measure_w / 2, h / 2 - 20,
+                 10 * g->obj_scale, WHITE);
+    rl_draw_text(instruction, w / 2 - instruction_measure_w / 2, h / 2 + 20,
+                 8 * g->obj_scale, LIGHTGRAY);
+
   } break;
   case SCREEN_GAMEPLAY: {
     rl_clear_background(BROWN);
@@ -203,28 +173,22 @@ void game_draw(GameContext *g)
     rl_draw_texture_ex(
         g->papagaio_image,
         (Vec2){g->papagaio_pos.x - (g->papagaio_image.width) / 2,
-        g->papagaio_pos.y - (g->papagaio_image.height) / 2},
-        0.0,
-        g->obj_scale,
-        WHITE
-      );
+               g->papagaio_pos.y - (g->papagaio_image.height) / 2},
+        0.0, g->obj_scale, WHITE);
 
     // If the game is paused, draw an overlay
-    if (g->is_paused)
-    {
+    if (g->is_paused) {
       rl_draw_rectangle(0, 0, g->screen.texture.width, g->screen.texture.height,
                         rl_fade(BLACK, 0.6f));
 
       rl_draw_text("PAUSED", g->screen.texture.width / 2 - 20,
                    g->screen.texture.height / 2 - 5, 10, WHITE);
     }
-  }
-  break;
-  case SCREEN_OPTIONS:
-  {
+
+  } break;
+  case SCREEN_OPTIONS: {
     // Drawing for options screen
-  }
-  break;
+  } break;
   }
 
   // 3. Draw the transition effect on top of everything else
@@ -256,8 +220,7 @@ void game_draw(GameContext *g)
   rl_end_drawing();
 }
 
-void game_loop_step(void *ctx)
-{
+void game_loop_step(void *ctx) {
   GameContext *g = (GameContext *)ctx;
 
   if (rl_is_key_pressed(KEY_F))
@@ -269,15 +232,7 @@ void game_loop_step(void *ctx)
   game_draw(g);
 }
 
-void game_exit(GameContext *g)
-{
-  if (g->scream_playback_sound_ready)
-  {
-    rl_unload_sound(g->scream_playback_sound);
-    g->scream_playback_sound_ready = false;
-  }
-
-  audio_capture_uninit(&g->microphone_capture);
+void game_exit(GameContext *g) {
   rl_close_window();
   rl_close_audio_device();
 }
