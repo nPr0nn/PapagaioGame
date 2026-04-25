@@ -33,11 +33,23 @@ typedef struct GameContext {
   // Close Events
   bool should_close;
 
+  // scale
+  f32 obj_scale;
+
+  // Physics f
+  f32 gravity;
+
+  f32 rot;   
+  
   // Game Specifics
   // Papagaio
   Vec2 papagaio_pos;
+  f32 papagaio_vel;
+  f32 papagaio_acc;
+  f32 flap_force;
   Sound papagaio_sound;
   Texture2D papagaio_image;
+
 
   // Gaviao
   Vec2 gaviao;

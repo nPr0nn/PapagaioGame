@@ -27,23 +27,23 @@ void game_init(GameContext *g) {
 
    // Center Window
 #ifdef PLATFORM_DESKTOP
-  int monitor_id = rl_get_current_monitor();
-  int monitor_width = rl_get_monitor_width(monitor_id);
-  int monitor_height = rl_get_monitor_height(monitor_id);
+  i32 monitor_id = rl_get_current_monitor();
+  i32 monitor_width = rl_get_monitor_width(monitor_id);
+  i32 monitor_height = rl_get_monitor_height(monitor_id);
 
   if (rl_get_monitor_count() == 2) {
     monitor_width = rl_get_monitor_width(1) + 2 * monitor_width;
     monitor_height = rl_get_monitor_height(1);
   }
 
-  int window_pos_x = (monitor_width - rl_get_screen_width()) / 2;
-  int window_pos_y = (monitor_height - rl_get_screen_height()) / 2;
+  i32 window_pos_x = (monitor_width - rl_get_screen_width()) / 2;
+  i32 window_pos_y = (monitor_height - rl_get_screen_height()) / 2;
   rl_set_window_position(window_pos_x, window_pos_y);
 #endif
 
   // --- Render Screen Texture ---
-  int screen_texture_width = 160;
-  int screen_texture_height = 144;
+  i32 screen_texture_width = 1080;
+  i32 screen_texture_height = 720;
   g->screen =
       rl_load_render_texture(screen_texture_width, screen_texture_height);
   rl_set_texture_filter(g->screen.texture, TEXTURE_FILTER_POINT);
@@ -58,53 +58,72 @@ void game_init(GameContext *g) {
 
   g->papagaio_pos.x = g->screen.texture.width * 0.5f;
   g->papagaio_pos.y = g->screen.texture.height * 0.5f;
+
+  g->papagaio_vel   = 0;
+  g->papagaio_acc   = 0;
+  g->gravity        = 800;
+  g->flap_force    = 350.0f;
+
+
+  g->obj_scale = 5.0;
+  g->rot = 0;
 }
 
 void game_update(GameContext *g) {
-  // Always update the transition state first
   update_transition(&g->transition_state, &g->current_screen);
 
-  // Only process game logic if we are not in the middle of a transition
   if (!is_transitioning(&g->transition_state)) {
     switch (g->current_screen) {
     case SCREEN_TITLE: {
-      // When ENTER is pressed, start a transition to the gameplay screen
       if (rl_is_key_pressed(KEY_ENTER)) {
+        // Reset bird state when entering gameplay
+        g->papagaio_pos.x = g->screen.texture.width  * 0.33f;
+        g->papagaio_pos.y = g->screen.texture.height * 0.5f;
+        g->papagaio_vel   = 0;
+
         transition_to_screen(&g->transition_state, SCREEN_GAMEPLAY,
                              TRANSITION_CIRCLE_EXPAND, BLACK);
       }
     } break;
 
     case SCREEN_GAMEPLAY: {
-      f32 time = rl_get_time();
-      g->papagaio_pos.y += 0.25f * sin(time);
-      
-      // Toggle pause state
+      f32 dt = rl_get_frame_time();
+
       if (rl_is_key_pressed(KEY_P)) {
         g->is_paused = !g->is_paused;
       }
 
-      // Only update gameplay logic if the game is not paused
       if (!g->is_paused) {
+        // Flappy physics: gravity pulls down, SPACE flaps up
+        g->papagaio_vel += g->gravity * dt;
+        g->papagaio_pos.y += g->papagaio_vel * dt;
+
+        if (rl_is_key_pressed(KEY_SPACE)) {
+          g->papagaio_vel = -g->flap_force;   // flap_force e.g. 300.0f
+        }
+
+        // Clamp to screen bounds
+        f32 h = g->screen.texture.height;
+        if (g->papagaio_pos.y < 0)  g->papagaio_pos.y = 0;
+        if (g->papagaio_pos.y > h)  g->papagaio_pos.y = h;
+
         if (rl_is_key_pressed(KEY_M)) {
           rl_play_sound(g->papagaio_sound);
         }
       }
 
-      // Allow transitioning back to title screen
       if (rl_is_key_pressed(KEY_T)) {
         transition_to_screen(&g->transition_state, SCREEN_TITLE,
                              TRANSITION_WIPE_RIGHT, BLACK);
       }
-
     } break;
 
     case SCREEN_OPTIONS: {
-      // Logic for options screen would go here
     } break;
     }
   }
 }
+
 
 void game_draw(GameContext *g) {
   // 1. Draw game to screen texture
@@ -114,17 +133,32 @@ void game_draw(GameContext *g) {
   // Draw the content of the current screen
   switch (g->current_screen) {
   case SCREEN_TITLE: {
-    rl_clear_background(DARKGRAY);
 
-    rl_draw_text("TITLE SCREEN", 20, 20, 10, WHITE);
-    rl_draw_text("Press ENTER to start", 25, 40, 8, LIGHTGRAY);
+    rl_clear_background(GREEN);
+    const char* title = "PAPA PAPAGAIO";
+    const char* instruction = "Clique ENTER para começar";
+    f32 w = g->screen.texture.width;
+    f32 h = g->screen.texture.height;
+
+    i32 title_measure_w = rl_measure_text(title, 10 * g->obj_scale);
+    i32 instruction_measure_w = rl_measure_text(instruction, 8 * g->obj_scale);
+
+    // cabeca ombro joelho e pe
+    // by lozano
+    rl_draw_text(title,       w/2 - title_measure_w/2,       h/2 - 20, 10 * g->obj_scale, WHITE);
+    rl_draw_text(instruction, w/2 - instruction_measure_w/2, h/2 + 20,  8 * g->obj_scale, LIGHTGRAY);
+   
+    
   } break;
   case SCREEN_GAMEPLAY: {
     rl_clear_background(BROWN);
-    rl_draw_texture(
+
+    rl_draw_texture_ex(
         g->papagaio_image,
-        g->papagaio_pos.x - (g->papagaio_image.width) / 2,
-        g->papagaio_pos.y - (g->papagaio_image.height) / 2,
+        (Vec2){g->papagaio_pos.x - (g->papagaio_image.width) / 2,
+        g->papagaio_pos.y - (g->papagaio_image.height) / 2},
+        0.0,
+        g->obj_scale,
         WHITE
       );
 
@@ -132,6 +166,7 @@ void game_draw(GameContext *g) {
     if (g->is_paused) {
       rl_draw_rectangle(0, 0, g->screen.texture.width, g->screen.texture.height,
                         rl_fade(BLACK, 0.6f));
+
       rl_draw_text("PAUSED", g->screen.texture.width / 2 - 20,
                    g->screen.texture.height / 2 - 5, 10, WHITE);
     }
@@ -168,7 +203,6 @@ void game_draw(GameContext *g) {
   // Draw the scaled game texture
   rl_draw_texture_pro(g->screen.texture, source, dest, (Vector2){0, 0}, 0.0f,
                       WHITE);
-
   rl_end_drawing();
 }
 
