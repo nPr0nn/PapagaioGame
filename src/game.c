@@ -316,26 +316,61 @@ void game_draw(GameContext *g) {
   } break;
   case SCREEN_GAMEPLAY: {
     rl_clear_background(BROWN);
-    rl_draw_texture(g->back_image,
-                    g->screen.texture.width / 2 - g->back_image.width / 2,
-                    g->screen.texture.height - g->back_image.height, WHITE);
+    rl_draw_texture_ex(g->back_image,
+                    (Vec2){0.0 , 0.0}, 0.0f, g->obj_scale, WHITE);
 
     
+                    
+                    rl_draw_texture_ex(
+      g->bala_image,
+      (Vec2){g->Bala_pos.x - (g->bala_image.width) / 2,
+        g->Bala_pos.y - (g->bala_image.height) / 2},
+        0.0f,
+        g->obj_scale,
+        WHITE
+      );
+      rl_draw_texture_ex(
+        g->coco_image,
+        (Vec2){g->Coco_pos.x - (g->coco_image.width) / 2,
+          g->Coco_pos.y - (g->coco_image.height) / 2},
+          0.0f,
+      g->obj_scale,
+      WHITE
+    );
+
+    rl_draw_texture_ex(
+      g->coqueiro_image,
+      (Vec2){g->Coqueiro_pos.x - (g->coqueiro_image.width) / 2,
+        g->Coqueiro_pos.y - (g->coqueiro_image.height) / 2},
+        0.0f,
+        g->obj_scale*4,
+        WHITE
+      );
+      rl_draw_texture_ex(
+        g->pedra_image,
+      (Vec2){g->Pedra_pos.x - (g->pedra_image.width) / 2,
+      g->Pedra_pos.y - (g->pedra_image.height) / 2},
+      0.0f,
+      g->obj_scale,
+      WHITE
+    );
+    rl_draw_texture_ex(
+      g->harpia_image,
+      (Vec2){g->gaviao_pos.x - (g->harpia_image.width) / 2,
+      g->gaviao_pos.y - (g->harpia_image.height) / 2},
+      0.0f,
+      g->obj_scale,
+      WHITE
+    );
     rl_draw_texture_ex(
       g->papagaio_image,
       (Vec2){g->papagaio_pos.x - (g->papagaio_image.width) / 2,
       g->papagaio_pos.y - (g->papagaio_image.height) / 2},
       0.0f,
-      1.0f,
+      g->obj_scale,
       WHITE
     );
     
-    rl_draw_rectangle(g->Bala_pos.x, g->Bala_pos.y, g->Bala_size.x, g->Bala_size.y, RED);
-    rl_draw_rectangle(g->Coco_pos.x, g->Coco_pos.y, g->Coco_size.x, g->Coco_size.y, PINK);
-    rl_draw_rectangle(g->Coqueiro_pos.x, g->Coqueiro_pos.y, g->Coqueiro_size.x, 20, GREEN);
-    rl_draw_rectangle(g->Pedra_pos.x, g->Pedra_pos.y, g->Pedra_size.x, g->Pedra_size.y, LIGHTGRAY);
-    rl_draw_rectangle(g->gaviao_pos.x, g->gaviao_pos.y, g->gaviao_size.x, g->gaviao_size.y, BLUE);
-
     // If the game is paused, draw an overlay
     if (g->is_paused) {
       rl_draw_rectangle(0, 0, g->screen.texture.width, g->screen.texture.height,
